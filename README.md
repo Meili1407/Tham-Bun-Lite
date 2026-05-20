@@ -128,7 +128,7 @@ The requester never touches the money. Donors fund verified treatment, and the c
 ## Tech Stack
 
 - Backend: Node.js, Express, TypeScript
-- AI/OCR validator: Tesseract.js or Gemini upgrade path, plus rule-based scoring
+- AI/OCR validator: Tesseract.js , plus rule-based scoring
 - Frontend: web campaign page owned by Antigravity
 - Web3: Solidity escrow contract, EVM testnet, ethers.js
 
