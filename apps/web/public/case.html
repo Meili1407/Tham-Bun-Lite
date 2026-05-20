@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tham Bun Protocol</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero-band">
+        <div class="hero-copy">
+          <p class="eyebrow">AI/OCR Verified</p>
+          <h1>Tham Bun Protocol</h1>
+          <p class="hero-note">Provider-only payout. PromptPay simulated for hackathon. Testnet escrow active.</p>
+        </div>
+      </section>
+
+      <section class="campaign-layout">
+        <div class="campaign-media">
+          <div class="media-frame">
+            <img id="animal-image" alt="Animal case" />
+            <div class="media-badge">Verified treatment campaign</div>
+          </div>
+        </div>
+
+        <div class="campaign-panel">
+          <div class="status-row">
+            <span class="pill" id="status-pill">Loading</span>
+            <span class="pill subtle" id="risk-pill">Risk</span>
+          </div>
+
+          <h2 id="case-title">Loading case</h2>
+          <p class="provider-line">
+            <span>Clinic</span>
+            <strong id="provider-name">-</strong>
+          </p>
+
+          <div class="funding-block">
+            <div class="funding-figures">
+              <div>
+                <span class="label">Raised</span>
+                <strong id="amount-raised">0 THB</strong>
+              </div>
+              <div>
+                <span class="label">Needed</span>
+                <strong id="amount-needed">0 THB</strong>
+              </div>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="trust-grid">
+            <article>
+              <span class="label">Trust Score</span>
+              <strong id="trust-score">-</strong>
+            </article>
+            <article>
+              <span class="label">Escrow Status</span>
+              <strong id="escrow-status">-</strong>
+            </article>
+            <article>
+              <span class="label">Provider Wallet</span>
+              <strong id="provider-wallet" class="mono">-</strong>
+            </article>
+            <article>
+              <span class="label">Contract Address</span>
+              <strong id="contract-address" class="mono">-</strong>
+            </article>
+          </div>
+
+          <div class="tx-block">
+            <span class="label">Latest Transaction</span>
+            <strong id="tx-hash" class="mono">Pending</strong>
+          </div>
+
+          <div class="button-grid">
+            <button data-amount="100">Donate 100 THB</button>
+            <button data-amount="300">Donate 300 THB</button>
+            <button data-amount="500">Donate 500 THB</button>
+            <button data-action="full">Fully Fund Demo Case</button>
+          </div>
+
+          <p class="helper-copy" id="helper-copy">Loading campaign data.</p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/campaign.js"></script>
+  </body>
+</html>

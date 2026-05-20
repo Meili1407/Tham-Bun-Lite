@@ -1,5 +1,7 @@
 import cors from "cors";
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { casesRouter } from "./routes/cases.js";
 import { lineWebhookRouter } from "./routes/lineWebhook.js";
@@ -7,12 +9,20 @@ import { ensureCaseStore } from "./services/caseStore.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
+const currentFile = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFile);
+const webPublicDir = path.resolve(currentDir, "../../web/public");
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+app.use(express.static(webPublicDir));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "tham-bun-api" });
+});
+
+app.get("/case/:id", (_req, res) => {
+  res.sendFile(path.join(webPublicDir, "case.html"));
 });
 
 app.use("/api/cases", casesRouter);
