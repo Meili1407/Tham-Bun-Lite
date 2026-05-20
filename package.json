@@ -1,0 +1,25 @@
+{
+  "name": "tham-bun-protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:api": "tsx apps/api/src/index.ts",
+    "build:api": "tsc -p apps/api/tsconfig.json --noEmit",
+    "deploy:contract": "tsx scripts/deploy.ts"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^10.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
