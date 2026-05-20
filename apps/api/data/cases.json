@@ -1,0 +1,27 @@
+[
+  {
+    "id": "case_001",
+    "requesterLineId": "U123456789",
+    "title": "Emergency treatment for injured stray dog",
+    "providerName": "Happy Paw Vet Clinic",
+    "providerWallet": "0x1111111111111111111111111111111111111111",
+    "amountNeeded": 3200,
+    "amountRaised": 0,
+    "trustScore": 87,
+    "fraudRisk": "low",
+    "status": "FUNDING",
+    "billImageUrl": "/uploads/bill.jpg",
+    "animalImageUrl": "/uploads/dog.jpg",
+    "validation": {
+      "isValidBill": true,
+      "clinicName": "Happy Paw Vet Clinic",
+      "detectedAmountThb": 3200,
+      "detectedDate": "20/05/2026",
+      "fraudRisk": "low",
+      "trustScore": 87,
+      "redFlags": [],
+      "reason": "Seeded demo case for the hackathon flow.",
+      "rawOcrText": "Happy Paw Vet Clinic invoice amount 3200 THB date 20/05/2026"
+    }
+  }
+]

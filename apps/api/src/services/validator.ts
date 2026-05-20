@@ -10,7 +10,7 @@ export interface ValidateCaseInput {
 const defaultDemoOcrText = "Happy Paw Vet Clinic invoice amount 3200 THB date 20/05/2026";
 
 export async function validateCaseEvidence(input: ValidateCaseInput): Promise<ValidationResult> {
-  const rawOcrText = input.ocrText ?? defaultDemoOcrText;
+  const rawOcrText = await extractOcrText(input);
   const provider = findProviderByName(rawOcrText);
   const detectedAmountThb = detectAmountThb(rawOcrText);
   const detectedDate = detectDate(rawOcrText);
@@ -61,6 +61,35 @@ export async function validateCaseEvidence(input: ValidateCaseInput): Promise<Va
   };
 }
 
+async function extractOcrText(input: ValidateCaseInput): Promise<string> {
+  if (input.ocrText) {
+    return input.ocrText;
+  }
+
+  const mode = process.env.VALIDATOR_MODE ?? "mock";
+
+  if (mode === "mock") {
+    return defaultDemoOcrText;
+  }
+
+  if (mode !== "tesseract") {
+    throw new Error(`Unsupported VALIDATOR_MODE: ${mode}`);
+  }
+
+  const tesseractModule = (await import("tesseract.js")) as {
+    recognize?: (image: string, languages?: string) => Promise<{ data: { text: string } }>;
+    default?: {
+      recognize: (image: string, languages?: string) => Promise<{ data: { text: string } }>;
+    };
+  };
+  const recognize = tesseractModule.recognize ?? tesseractModule.default?.recognize;
+  if (!recognize) {
+    throw new Error("Tesseract recognize() is unavailable.");
+  }
+  const result = await recognize(input.billImageUrl, "eng");
+  return sanitizeOcrText(result.data.text);
+}
+
 function detectAmountThb(text: string): number | null {
   const match = text.match(/(?:amount\s*)?([\d,]+)\s*(?:THB|baht)/i);
   if (!match) {
@@ -73,6 +102,10 @@ function detectAmountThb(text: string): number | null {
 function detectDate(text: string): string | null {
   const match = text.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b/);
   return match?.[1] ?? null;
+}
+
+function sanitizeOcrText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function riskFromScore(score: number): FraudRisk {

@@ -1,17 +1,10 @@
 import { Router } from "express";
-import { createCase, getCase, listCases, updateCase } from "../services/caseStore.js";
-import { createEscrowCase, fundEscrowCase, releaseEscrowToProvider } from "../services/escrow.js";
-import { findProviderByName } from "../services/providerRegistry.js";
-import { validateCaseEvidence } from "../services/validator.js";
+import { getCase, updateCase } from "../services/caseStore.js";
+import { createEscrowCase, fundEscrowCase, markTreatmentVerifiedEscrowCase, releaseEscrowCase } from "../services/escrow.js";
 
 export const casesRouter = Router();
-
-casesRouter.get("/", (_req, res) => {
-  res.json({ cases: listCases() });
-});
-
-casesRouter.get("/:id", (req, res) => {
-  const thamBunCase = getCase(req.params.id);
+casesRouter.get("/:id", async (req, res) => {
+  const thamBunCase = await getCase(req.params.id);
 
   if (!thamBunCase) {
     res.status(404).json({ error: "Case not found" });
@@ -21,53 +14,9 @@ casesRouter.get("/:id", (req, res) => {
   res.json(thamBunCase);
 });
 
-casesRouter.post("/", async (req, res, next) => {
-  try {
-    const providerName = String(req.body.providerName ?? "");
-    const provider = findProviderByName(providerName);
-
-    if (!provider) {
-      res.status(400).json({ error: "Unknown provider" });
-      return;
-    }
-
-    const newCase = createCase({
-      requesterLineId: String(req.body.requesterLineId ?? "demo_line_user"),
-      title: String(req.body.title ?? "Emergency treatment case"),
-      providerName: provider.name,
-      providerWallet: provider.wallet,
-      amountNeeded: Number(req.body.amountNeeded ?? 0),
-      billImageUrl: req.body.billImageUrl,
-      animalImageUrl: req.body.animalImageUrl
-    });
-
-    const validation = await validateCaseEvidence({
-      billImageUrl: newCase.billImageUrl ?? "",
-      animalImageUrl: newCase.animalImageUrl,
-      ocrText: req.body.ocrText
-    });
-    const escrowTx = await createEscrowCase(newCase);
-    const updated = updateCase(newCase.id, {
-      providerName: validation.clinicName,
-      amountNeeded: validation.detectedAmountThb ?? newCase.amountNeeded,
-      trustScore: validation.trustScore,
-      fraudRisk: validation.fraudRisk,
-      status: validation.isValidBill ? "FUNDING" : "REJECTED",
-      validation,
-      contractCaseId: escrowTx.contractCaseId,
-      contractAddress: escrowTx.contractAddress,
-      createdTxHash: escrowTx.txHash
-    });
-
-    res.status(201).json(updated);
-  } catch (error) {
-    next(error);
-  }
-});
-
 casesRouter.post("/:id/donate", async (req, res, next) => {
   try {
-    const thamBunCase = getCase(req.params.id);
+    const thamBunCase = await getCase(req.params.id);
     const amountThb = Number(req.body.amountThb ?? 0);
 
     if (!thamBunCase) {
@@ -80,11 +29,29 @@ casesRouter.post("/:id/donate", async (req, res, next) => {
       return;
     }
 
-    const tx = await fundEscrowCase(thamBunCase, amountThb);
-    const amountRaised = thamBunCase.amountRaised + amountThb;
-    const updated = updateCase(thamBunCase.id, {
-      amountRaised,
-      status: amountRaised >= thamBunCase.amountNeeded ? "FUNDED" : "FUNDING",
+    let contractCaseId = thamBunCase.contractCaseId;
+    let contractAddress = thamBunCase.contractAddress;
+    let createdTxHash = thamBunCase.createdTxHash;
+
+    if (!contractCaseId) {
+      const creation = await createEscrowCase(thamBunCase.providerWallet, thamBunCase.amountNeeded);
+      contractCaseId = creation.contractCaseId;
+      contractAddress = creation.contractAddress;
+      createdTxHash = creation.txHash;
+    }
+
+    if (!contractCaseId) {
+      throw new Error("Escrow case ID was not returned.");
+    }
+
+    const tx = await fundEscrowCase(contractCaseId, amountThb);
+    const nextAmountRaised = thamBunCase.amountRaised + amountThb;
+    const updated = await updateCase(thamBunCase.id, {
+      contractCaseId,
+      contractAddress,
+      createdTxHash,
+      amountRaised: nextAmountRaised,
+      status: nextAmountRaised >= thamBunCase.amountNeeded ? "FUNDED" : "FUNDING",
       fundedTxHash: tx.txHash
     });
 
@@ -96,7 +63,7 @@ casesRouter.post("/:id/donate", async (req, res, next) => {
 
 casesRouter.post("/:id/verify-treatment", async (req, res, next) => {
   try {
-    const thamBunCase = getCase(req.params.id);
+    const thamBunCase = await getCase(req.params.id);
 
     if (!thamBunCase) {
       res.status(404).json({ error: "Case not found" });
@@ -109,8 +76,18 @@ casesRouter.post("/:id/verify-treatment", async (req, res, next) => {
       return;
     }
 
-    const releaseTx = await releaseEscrowToProvider(thamBunCase);
-    const updated = updateCase(thamBunCase.id, {
+    if (!thamBunCase.contractCaseId) {
+      throw new Error("Case does not have an escrow contract ID yet.");
+    }
+
+    await updateCase(thamBunCase.id, {
+      treatmentProofUrl,
+      status: "TREATMENT_SUBMITTED"
+    });
+
+    await markTreatmentVerifiedEscrowCase(thamBunCase.contractCaseId);
+    const releaseTx = await releaseEscrowCase(thamBunCase.contractCaseId);
+    const updated = await updateCase(thamBunCase.id, {
       treatmentProofUrl,
       status: "RELEASED",
       releaseTxHash: releaseTx.txHash

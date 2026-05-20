@@ -53,7 +53,7 @@ contract ThamBunEscrow {
     function fundCase(uint256 caseId) external payable {
         CaseData storage caseData = cases[caseId];
         require(caseData.provider != address(0), "Case not found");
-        require(caseData.status == CaseStatus.Funding || caseData.status == CaseStatus.Funded, "Not fundable");
+        require(caseData.status == CaseStatus.Funding, "Not fundable");
         require(msg.value > 0, "No value");
 
         caseData.raisedAmount += msg.value;
@@ -66,7 +66,11 @@ contract ThamBunEscrow {
 
     function markTreatmentVerified(uint256 caseId) external onlyOracle {
         CaseData storage caseData = cases[caseId];
-        require(caseData.status == CaseStatus.Funded, "Case not funded");
+        require(
+            caseData.status == CaseStatus.Funding || caseData.status == CaseStatus.Funded,
+            "Case not active"
+        );
+        require(caseData.raisedAmount > 0, "No funds raised");
 
         caseData.status = CaseStatus.TreatmentVerified;
         emit TreatmentVerified(caseId);
@@ -77,6 +81,7 @@ contract ThamBunEscrow {
         require(caseData.status == CaseStatus.TreatmentVerified, "Treatment not verified");
 
         uint256 amount = caseData.raisedAmount;
+        require(amount > 0, "No balance");
         caseData.raisedAmount = 0;
         caseData.status = CaseStatus.Released;
         caseData.provider.transfer(amount);
